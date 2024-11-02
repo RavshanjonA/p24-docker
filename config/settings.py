@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from .rest_settings import *
 
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -38,6 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -78,7 +83,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': os.getenv("POSTGRES_DB"),
-        'HOST': 'postgres_db',
+        'HOST': os.getenv("POSTGRES_HOST"),
         'PASSWORD': os.getenv("POSTGRES_PASSWORD"),
         'PORT': '5432',
         'USER': os.getenv("POSTGRES_USER"),

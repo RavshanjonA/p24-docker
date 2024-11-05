@@ -3,7 +3,7 @@
 ###########
 
 # pull official base image
-FROM python:3.11.4-slim-buster as builder
+FROM python:3.11.4-slim-buster AS builder
 
 # set work directory
 WORKDIR /usr/src/app
@@ -35,14 +35,14 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requir
 FROM python:3.11.4-slim-buster
 
 # create directory for the app user
-RUN mkdir -p /home/app
+RUN mkdir -p /var/www
 
 # create the app user
 RUN addgroup --system app && adduser --system --group app
 
 # create the appropriate directories
-ENV HOME=/home/app
-ENV APP_HOME=/home/app/web
+ENV HOME=/var/www
+ENV APP_HOME=/var/www/web
 RUN mkdir $APP_HOME
 WORKDIR $APP_HOME
 
@@ -89,4 +89,4 @@ RUN chown -R app:app $APP_HOME
 USER app
 
 # run entrypoint.prod.sh
-ENTRYPOINT ["/home/app/web/entrypoint.sh"]
+ENTRYPOINT ["/var/www/web/entrypoint.sh"]

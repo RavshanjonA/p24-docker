@@ -22,7 +22,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
                         validators=[FileExtensionValidator(allowed_extensions=["jpg", 'jpeg', 'png'],
                                                            message=_("Image type must be like: jpg, png, jpeg")),
                                     image_size_validators],
-                        default="avatar_docker.jpeg"
+                        default="avatar_docker.jpeg",
                         )
 
     def save(self, *args, **kwargs):

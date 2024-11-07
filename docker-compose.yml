@@ -1,3 +1,8 @@
+networks:
+  web_network:
+    driver: bridge
+
+
 services:
   db:
     image: postgres:16-alpine
@@ -5,18 +10,21 @@ services:
       - ./env/.env
     volumes:
       - postgres_data:/db:/var/lib/postgresql/data
-
+    networks:
+      - web_network
   nginx:
     build:
       context: .
       dockerfile: ./compose/nginx/Dockerfile
-    volumes:
-      - static_volume:/var/www/web/static
-      - media_volume:/var/www/web/media
+    #    volumes:
+    #      - static_volume:/var/www/web/static
+    #      - media_volume:/var/www/web/media
     ports:
       - 80:80
     depends_on:
       - app
+    networks:
+      - web_network
 
   app:
     build:
@@ -27,60 +35,95 @@ services:
     volumes:
       - .:/app
     env_file:
-      - ./env/.env
+      - .env
     depends_on:
       - redis
       - db
     restart: always
 
+    networks:
+      - web_network
+
+
   redis:
     image: redis:alpine
     container_name: redis
-
-  celery_worker:
-    build:
-      context: .
-      dockerfile: ./compose/django/Dockerfile
-    image: django_celery_example_celery_worker
-    command: /start-celeryworker
-    volumes:
-      - .:/app
-    env_file:
-      - ./env/.env
-    depends_on:
-      - redis
-      - db
-
-  celery_beat:
-    build:
-      context: .
-      dockerfile: ./compose/django/Dockerfile
-    image: django_celery_example_celery_beat
-    command: /start-celerybeat
-    volumes:
-      - .:/app
-    env_file:
-      - ./env/.env
-    depends_on:
-      - redis
-      - db
-
-  flower:
-    build:
-      context: .
-      dockerfile: ./compose/django/Dockerfile
-    image: django_celery_example_celery_flower
-    command: /start-flower
-    volumes:
-      - .:/app
-    env_file:
-      - ./env/.env
+    networks:
+      - web_network
+  minio:
+    image: minio/minio:latest
     ports:
-      - 57:5555
+      - 9000:9000
+      - 9001:9001
+    environment:
+      - MINIO_ACCESS_KEY=minio
+      - MINIO_SECRET_KEY=minio123
+
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - web_network
+
+  minio-client:
+    image: minio/mc:latest
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host rm expo;
+      /usr/bin/mc config host add --quiet --api s3v4 local http://minio:9000 minio minio123;
+      /usr/bin/mc rb --force local/p24-bucket/;
+      /usr/bin/mc mb --quiet local/p24-bucket/;
+      /usr/bin/mc policy set public local/p24-bucket;
+      "
     depends_on:
-      - redis
-      - db
+      - minio
+    networks:
+      - web_network
+#  celery_worker:
+#    build:
+#      context: .
+#      dockerfile: ./compose/django/Dockerfile
+#    image: django_celery_example_celery_worker
+#    command: /start-celeryworker
+#    volumes:
+#      - .:/app
+#    env_file:
+#      - ./env/.env
+#    depends_on:
+#      - redis
+#      - db
+#
+#  celery_beat:
+#    build:
+#      context: .
+#      dockerfile: ./compose/django/Dockerfile
+#    image: django_celery_example_celery_beat
+#    command: /start-celerybeat
+#    volumes:
+#      - .:/app
+#    env_file:
+#      - ./env/.env
+#    depends_on:
+#      - redis
+#      - db
+#
+#  flower:
+#    build:
+#      context: .
+#      dockerfile: ./compose/django/Dockerfile
+#    image: django_celery_example_celery_flower
+#    command: /start-flower
+#    volumes:
+#      - .:/app
+#    env_file:
+#      - ./env/.env
+#    ports:
+#      - 57:5555
+#    depends_on:
+#      - redis
+#      - db
 volumes:
   postgres_data:
   static_volume:
   media_volume:
+  minio-data:
